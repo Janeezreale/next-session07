@@ -1,4 +1,4 @@
-# 캐릭터 챗봇 실습
+# 실습: OpenAI API를 활용하여 나만의 캐릭터 챗봇 만들기
 
 Next.js App Router와 TypeScript로 만드는 작은 캐릭터 챗봇입니다. **치이카와**와 대화하며, 캐릭터 설정과 OpenAI API 연결 과정을 배웁니다. 먼저 실행한 다음 **`src/prompts/character.ts`부터 수정하세요.**
 
@@ -34,7 +34,7 @@ npm run typecheck
 npm start
 ```
 
-## 2. 첫 실습: 나만의 캐릭터 만들기
+## 2. 실습: 나만의 캐릭터로 바꿔보기
 
 `src/prompts/character.ts`의 `character` 객체를 아래와 같이 수정해 봅니다.
 
