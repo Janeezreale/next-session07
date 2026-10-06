@@ -28,31 +28,44 @@ export default function Chat({ character }: { character: CharacterDisplay }) {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
     const content = input.trim();
+
     if (!content || activeRequest.current) return;
 
-    // 새 질문 앞에 성공한 사용자·캐릭터 대화를 함께 보내 후속 질문의 문맥을 유지합니다.
     const nextMessages: Message[] = [...messages, { role: "user", content }];
+
     const validation = validateMessages(nextMessages);
+
     if ("error" in validation) {
       setError(validation.error);
       return;
     }
 
+    // 여기서부터 input과 실제 전송할 메시지를 완전히 분리
+    setInput("");
+
     const controller = new AbortController();
     activeRequest.current = controller;
-    setIsLoading(true);
+
     setPendingMessage(content);
+    setIsLoading(true);
     setError("");
-    // 실패하면 입력을 그대로 재전송할 수 있도록 성공하기 전에는 비우지 않습니다.
+
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: nextMessages }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: nextMessages,
+        }),
         signal: controller.signal,
       });
+
       const data = await response.json();
+
       if (!response.ok) {
         throw new Error(
           typeof data?.error === "string"
@@ -60,17 +73,26 @@ export default function Chat({ character }: { character: CharacterDisplay }) {
             : "메시지를 보내지 못했어요.",
         );
       }
+
       if (typeof data?.reply !== "string" || !data.reply.trim()) {
         throw new Error("답변이 비어 있어요. 다시 보내 주세요.");
       }
+
       if (activeRequest.current !== controller) return;
+
       setMessages([
         ...nextMessages,
-        { role: "assistant", content: data.reply },
+        {
+          role: "assistant",
+          content: data.reply,
+        },
       ]);
-      setInput("");
     } catch (cause) {
       if (activeRequest.current !== controller) return;
+
+      // 실패했을 때만 다시 입력창에 복구
+      setInput(content);
+
       setError(
         cause instanceof Error &&
           !(cause instanceof TypeError) &&
@@ -184,6 +206,19 @@ export default function Chat({ character }: { character: CharacterDisplay }) {
               id="message"
               value={input}
               onChange={(event) => setInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (
+                  event.key === "Enter" &&
+                  !event.shiftKey &&
+                  !event.nativeEvent.isComposing
+                ) {
+                  event.preventDefault();
+
+                  if (!isLoading && input.trim()) {
+                    event.currentTarget.form?.requestSubmit();
+                  }
+                }
+              }}
               placeholder="메시지를 입력하세요..."
               maxLength={MAX_MESSAGE_LENGTH}
               rows={2}
